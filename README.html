@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brewery Data Pipeline</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Warm Neutrals (Amber, Zinc, Sky Blue) -->
+    <!-- Application Structure Plan: Tabbed single-page application with sections for Overview, Architecture, Setup Guide, Pipeline Explorer, and Data Insights. The goal is to provide an interactive, non-linear way to understand the project's components and flow. The setup guide uses an accordion for clarity, and the pipeline explorer uses a clickable flowchart to explain each script. -->
+    <!-- Visualization & Content Choices: Architecture: 3-card layout (Flexbox) to represent Medallion layers. Setup: Accordion component (JS toggle) for step-by-step instructions. Pipeline: Clickable flowchart (styled divs) to show DAG flow. Data Output: Interactive bar chart (Chart.js) to visualize sample Gold layer data. No SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fefce8; /* amber-50 */
+            color: #27272a; /* zinc-800 */
+        }
+        .active-tab {
+            border-bottom-color: #0284c7; /* sky-600 */
+            color: #0c4a6e; /* sky-900 */
+            font-weight: 600;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .code-block { background-color: #1e293b; color: #e2e8f0; font-family: 'Courier New', Courier, monospace; }
+        .flow-arrow::after {
+            content: '→';
+            font-size: 2rem;
+            color: #fbbf24; /* amber-400 */
+            line-height: 1;
+        }
+        .lang-toggle.active {
+            background-color: #0284c7;
+            color: white;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <!-- HEADER -->
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-sky-900">
+                🍺 Brewery Data Pipeline
+            </h1>
+            <p class="mt-4 text-lg text-zinc-600">
+                An end-to-end data pipeline for ingesting, transforming, and analyzing brewery data using Airflow and Spark.
+            </p>
+            <!-- Language switcher removed as only English is supported -->
+        </header>
+
+        <!-- TABS NAVIGATION -->
+        <nav class="mb-8 border-b border-amber-200">
+            <ul class="flex flex-wrap -mb-px text-center text-zinc-500">
+                <li class="mr-2"><a href="#overview" class="tab-link inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-sky-700 hover:border-sky-300"><span>🏠 </span>Overview</a></li>
+                <li class="mr-2"><a href="#architecture" class="tab-link inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-sky-700 hover:border-sky-300"><span>🏛️ </span>Architecture</a></li>
+                <li class="mr-2"><a href="#setup" class="tab-link inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-sky-700 hover:border-sky-300"><span>⚙️ </span>Setup Guide</a></li>
+                <li class="mr-2"><a href="#pipeline" class="tab-link inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-sky-700 hover:border-sky-300"><span>🔀 </span>Pipeline Explorer</a></li>
+                 <li class="mr-2"><a href="#insights" class="tab-link inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-sky-700 hover:border-sky-300"><span>📊 </span>Data Insights</a></li>
+            </ul>
+        </nav>
+
+        <!-- TAB CONTENT -->
+        <main>
+            <!-- Overview Tab -->
+            <section id="overview" class="tab-content">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-amber-200">
+                    <h2 class="text-2xl font-bold text-sky-800 mb-4">Project Overview</h2>
+                    <p class="text-zinc-700 leading-relaxed">
+                        This project implements a robust data pipeline to extract data from the **Open Brewery DB API**, transform it, and persist it into a structured data lake. The core objective is to demonstrate skills in API consumption, data transformation, orchestration with **Apache Airflow**, and big data processing with **Apache Spark**, following the **Medallion Architecture**.
+                    </p>
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                        <div class="bg-amber-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-lg text-zinc-800">🔗 API Integration</h3>
+                            <p class="text-sm text-zinc-600">Fetches real-time data from external sources.</p>
+                        </div>
+                        <div class="bg-amber-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-lg text-zinc-800">💨 Spark Transformation</h3>
+                            <p class="text-sm text-zinc-600">Leverages PySpark for efficient, large-scale data processing.</p>
+                        </div>
+                        <div class="bg-amber-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-lg text-zinc-800">🏛️ Medallion Architecture</h3>
+                            <p class="text-sm text-zinc-600">Organizes data into Bronze, Silver, and Gold layers for quality and governance.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Architecture Tab -->
+            <section id="architecture" class="tab-content">
+                 <div class="bg-white p-6 rounded-lg shadow-sm border border-amber-200">
+                    <h2 class="text-2xl font-bold text-sky-800 mb-2">Data Lake Architecture: The Medallion Model</h2>
+                    <p class="text-zinc-600 mb-6">This project uses the Medallion Architecture to progressively refine data. Click on a layer to see more details.</p>
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+                        <!-- Bronze Layer -->
+                        <div class="architecture-card text-center p-6 bg-amber-100 border-2 border-amber-300 rounded-xl w-full md:w-1/3 shadow-md hover:shadow-lg hover:border-amber-400 transition-all cursor-pointer">
+                            <div class="text-4xl">🥉</div>
+                            <h3 class="text-xl font-bold mt-2 text-amber-900">Bronze Layer</h3>
+                            <p class="text-sm text-amber-800 mt-1">Raw, immutable data.</p>
+                            <div class="architecture-details hidden mt-4 text-left text-sm space-y-2">
+                                <p><strong>Purpose:</strong> Stores data in its original format from the API. Serves as a historical archive.</p>
+                                <p><strong>Format:</strong> JSON</p>
+                                <p><strong>Partitioning:</strong> `extract_date`</p>
+                                <p><strong>Process:</strong> `BreweryOperator`</p>
+                            </div>
+                        </div>
+                        <div class="flow-arrow hidden md:block"></div>
+                        <!-- Silver Layer -->
+                        <div class="architecture-card text-center p-6 bg-slate-200 border-2 border-slate-300 rounded-xl w-full md:w-1/3 shadow-md hover:shadow-lg hover:border-slate-400 transition-all cursor-pointer">
+                            <div class="text-4xl">🥈</div>
+                            <h3 class="text-xl font-bold mt-2 text-slate-900">Silver Layer</h3>
+                            <p class="text-sm text-slate-800 mt-1">Cleaned & structured data.</p>
+                             <div class="architecture-details hidden mt-4 text-left text-sm space-y-2">
+                                <p><strong>Purpose:</strong> Provides a reliable, curated source for analytics.</p>
+                                <p><strong>Format:</strong> Parquet</p>
+                                <p><strong>Partitioning:</strong> `process_date`</p>
+                                <p><strong>Process:</strong> `transformation.py`</p>
+                            </div>
+                        </div>
+                        <div class="flow-arrow hidden md:block"></div>
+                        <!-- Gold Layer -->
+                        <div class="architecture-card text-center p-6 bg-amber-300 border-2 border-amber-500 rounded-xl w-full md:w-1/3 shadow-md hover:shadow-lg hover:border-amber-600 transition-all cursor-pointer">
+                             <div class="text-4xl">🥇</div>
+                            <h3 class="text-xl font-bold mt-2 text-amber-900">Gold Layer</h3>
+                            <p class="text-sm text-amber-800 mt-1">Aggregated, business-ready data.</p>
+                             <div class="architecture-details hidden mt-4 text-left text-sm space-y-2">
+                                <p><strong>Purpose:</strong> Houses highly aggregated views for BI and reporting.</p>
+                                <p><strong>Format:</strong> Parquet</p>
+                                <p><strong>Partitioning:</strong> `process_date`</p>
+                                <p><strong>Process:</strong> `aggregation.py`</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Setup Guide Tab -->
+            <section id="setup" class="tab-content">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-amber-200">
+                    <h2 class="text-2xl font-bold text-sky-800 mb-2">Setup Guide</h2>
+                    <p class="text-zinc-600 mb-6">Follow these steps to set up and run the project locally. Click each step to expand.</p>
+                    <div id="accordion-container" class="space-y-2">
+                        <!-- Accordion Item 1 -->
+                        <div class="accordion-item border border-amber-200 rounded-lg">
+                            <button class="accordion-header w-full text-left p-4 bg-amber-100 hover:bg-amber-200 transition font-semibold flex justify-between items-center">
+                                <span>1. Prerequisites: Python & Java</span>
+                                <span class="accordion-icon">▼</span>
+                            </button>
+                            <div class="accordion-content p-4 text-zinc-700">
+                                <p class="mb-2">Ensure you have **Linux** and **Visual Studio Code** (or your preferred IDE) installed.</p>
+                                <h3 class="font-medium text-lg mt-4 mb-2">Python 3.9 & Virtual Environment</h3>
+                                <p class="mb-2">Install Python 3.9 and the `venv` module:</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>sudo apt update
+sudo apt install python3.9 python3.9-venv</code></pre>
+                                <p class="mt-4 mb-2">Create and activate your virtual environment (from project root):</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>python3.9 -m venv venv
+source venv/bin/activate</code></pre>
+                                <p class="mt-4 mb-2">Install Python dependencies for Airflow and custom operators:</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code># requirements.txt
+# Core Airflow and Providers
+apache-airflow[postgres,celery,redis]==2.3.2
+apache-airflow-providers-apache-spark==4.0.0
+apache-airflow-providers-http==2.1.2
+# Testing
+pytest==8.4.1</code></pre>
+                                <p class="mt-4 mb-2">Then install them:</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>pip install -r requirements.txt</code></pre>
+                                <h3 class="font-medium text-lg mt-4 mb-2">Java Development Kit (JDK)</h3>
+                                <p class="mb-2">Spark requires Java 8 or later. Check your version and install if needed:</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>java -version
+sudo apt install openjdk-11-jdk # or openjdk-8-jdk</code></pre>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 2 -->
+                        <div class="accordion-item border border-amber-200 rounded-lg">
+                            <button class="accordion-header w-full text-left p-4 bg-amber-100 hover:bg-amber-200 transition font-semibold flex justify-between items-center">
+                                <span>2. Apache Spark Installation</span>
+                                <span class="accordion-icon">▼</span>
+                            </button>
+                            <div class="accordion-content p-4 text-zinc-700">
+                                <p class="mb-2">Download and extract Spark 3.1.3 (pre-built for Hadoop 3.2):</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>wget https://archive.apache.org/dist/spark/spark-3.1.3/spark-3.1.3-bin-hadoop3.2.tgz
+tar -xvzf spark-3.1.3-bin-hadoop3.2.tgz</code></pre>
+                                <p class="mt-4">Move the extracted folder (`spark-3.1.3-bin-hadoop3.2`) to your project root.</p>
+                                <p class="mt-4 mb-2">For Spark scripts, create `scripts/requirements_spark.txt`:</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code># scripts/requirements_spark.txt
+pyspark==3.1.3</code></pre>
+                                <p class="mt-4">These dependencies are typically handled by `spark-submit` or pre-installed in the Spark environment.</p>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 3 -->
+                        <div class="accordion-item border border-amber-200 rounded-lg">
+                            <button class="accordion-header w-full text-left p-4 bg-amber-100 hover:bg-amber-200 transition font-semibold flex justify-between items-center">
+                                <span>3. Apache Airflow Setup</span>
+                                <span class="accordion-icon">▼</span>
+                            </button>
+                            <div class="accordion-content p-4 text-zinc-700">
+                                <p class="mb-2">Define Airflow and Python versions:</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>export AIRFLOW_VERSION=2.3.2
+export PYTHON_VERSION=3.9
+export CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"</code></pre>
+                                <p class="mt-4 mb-2">Install Apache Airflow (ensure virtual environment is active):</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>pip install "apache-airflow[postgres,celery,redis]==${AIRFLOW_VERSION}" --constraint "${CONSTRAINT_URL}"</code></pre>
+                                <p class="mt-4 mb-2">Set Airflow and Spark Home directories (add to `~/.bashrc` for persistence):</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>export AIRFLOW_HOME=$(pwd)/airflow_pipeline
+export SPARK_HOME=$(pwd)/spark-3.1.3-bin-hadoop3.2/</code></pre>
+                                <p class="mt-4 mb-2">Initialize Airflow Database and create an admin user:</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>airflow db migrate
+airflow users create \
+    --username admin \
+    --firstname Admin \
+    --lastname User \
+    --role Admin \
+    --email admin@example.com \
+    --password admin</code></pre>
+                                <p class="mt-4 mb-2">Optional: Configure Webserver for public access (for development only):</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code># Create or edit airflow_pipeline/webserver_config.py
+# Add the following line:
+AUTH_ROLE_PUBLIC = 'Admin'</code></pre>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 4 -->
+                        <div class="accordion-item border border-amber-200 rounded-lg">
+                            <button class="accordion-header w-full text-left p-4 bg-amber-100 hover:bg-amber-200 transition font-semibold flex justify-between items-center">
+                                <span>4. Airflow Connections Setup</span>
+                                <span class="accordion-icon">▼</span>
+                            </button>
+                            <div class="accordion-content p-4 text-zinc-700">
+                                <p class="mb-2">Configure these connections in the Airflow UI (Admin > Connections):</p>
+                                <h3 class="font-medium text-lg mt-4 mb-2">`brewery_default` (HTTP Connection)</h3>
+                                <ul class="list-disc list-inside ml-4">
+                                    <li>Connection ID: `brewery_default`</li>
+                                    <li>Connection Type: `HTTP`</li>
+                                    <li>Host: `https://api.openbrewerydb.org`</li>
+                                </ul>
+                                <h3 class="font-medium text-lg mt-4 mb-2">`spark_default` (Spark Connection)</h3>
+                                <ul class="list-disc list-inside ml-4">
+                                    <li>Connection ID: `spark_default`</li>
+                                    <li>Connection Type: `Spark`</li>
+                                    <li>Host: `local`</li>
+                                    <li>Extra (JSON): <pre class="code-block inline-block p-1 rounded-md text-sm"><code>{"spark_home": "/home/enduser/Desktop/Apache Airflow/spark-3.1.3-bin-hadoop3.2"}</code></pre></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 5 -->
+                        <div class="accordion-item border border-amber-200 rounded-lg">
+                            <button class="accordion-header w-full text-left p-4 bg-amber-100 hover:bg-amber-200 transition font-semibold flex justify-between items-center">
+                                <span>5. Running the Pipeline</span>
+                                <span class="accordion-icon">▼</span>
+                            </button>
+                            <div class="accordion-content p-4 text-zinc-700">
+                                <p class="mb-2">1. Start Airflow in standalone mode (from `$AIRFLOW_HOME`):</p>
+                                <pre class="code-block p-3 rounded-md text-sm overflow-x-auto"><code>airflow standalone</code></pre>
+                                <p class="mt-4 mb-2">2. Access the Airflow UI at `http://localhost:8080`.</p>
+                                <p class="mt-4 mb-2">3. Locate `BreweryDAG` in the DAGs list and toggle it ON.</p>
+                                <p class="mt-4 mb-2">4. Trigger the DAG manually or wait for its scheduled run.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pipeline Explorer Tab -->
+            <section id="pipeline" class="tab-content">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-amber-200">
+                    <h2 class="text-2xl font-bold text-sky-800 mb-4">Pipeline Explorer: Understanding the Flow</h2>
+                    <p class="text-zinc-700 leading-relaxed mb-6">
+                        This section details the individual scripts and components that make up the data pipeline. Click on each step to learn more about its role and the files involved.
+                    </p>
+
+                    <div class="flex flex-col items-center space-y-6">
+                        <!-- Step 1: Extraction -->
+                        <div class="pipeline-step w-full max-w-2xl bg-amber-50 p-4 rounded-lg shadow-md border border-amber-200 cursor-pointer hover:shadow-lg transition-shadow">
+                            <h3 class="text-xl font-bold text-amber-800">1. Data Extraction (Bronze Layer) 📥</h3>
+                            <div class="pipeline-details hidden mt-3 text-sm text-zinc-700 space-y-2">
+                                <p><strong>Purpose:</strong> Fetches raw brewery data from the Open Brewery DB API.</p>
+                                <p><strong>Files:</strong></p>
+                                <ul class="list-disc list-inside ml-4">
+                                    <li>`dags/brewery_dag.py`: Defines the `task_brewery` task using `BreweryOperator`. The `extract_date` partitioning in the Bronze layer is dynamically set using `data_interval_end` to reflect the actual execution date of the task, ensuring up-to-date partitioning.</li>
+                                    <li>`plugins/operators/brewery_operator.py`: Custom Airflow Operator responsible for orchestrating the API call and writing data to the Bronze layer. It ensures the output directory exists and writes data line by line.</li>
+                                    <li>`hook/brewery_hook.py`: Custom Airflow Hook that handles the actual HTTP requests to the Open Brewery DB API. It includes pagination logic to fetch all available records and basic error handling. It also applies a small `time.sleep` to avoid API overload.</li>
+                                    <li>`scripts/api_extraction.py`: A standalone utility script for quick API extraction testing outside of Airflow.</li>
+                                </ul>
+                                <p><strong>Key Features:</strong> API integration, pagination, basic error handling, raw data persistence (JSON).</p>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-amber-500">↓</div>
+
+                        <!-- Step 2: Transformation -->
+                        <div class="pipeline-step w-full max-w-2xl bg-slate-100 p-4 rounded-lg shadow-md border border-slate-200 cursor-pointer hover:shadow-lg transition-shadow">
+                            <h3 class="text-xl font-bold text-slate-800">2. Data Transformation (Silver Layer) ⚙️</h3>
+                            <div class="pipeline-details hidden mt-3 text-sm text-zinc-700 space-y-2">
+                                <p><strong>Purpose:</strong> Transforms raw JSON data from the Bronze layer into structured Parquet format, adding processing metadata.</p>
+                                <p><strong>Files:</strong></p>
+                                <ul class="list-disc list-inside ml-4">
+                                    <li>`dags/brewery_dag.py`: Defines the `brewery_transform` task using `SparkSubmitOperator`.</li>
+                                    <li>`scripts/spark/transformation.py`: PySpark script that reads JSON data from the Bronze layer, adds the `extract_date` column (representing the processing date), and writes the data to the Silver layer in Parquet format. It includes schema validation to ensure data quality.</li>
+                                    <li>`scripts/tests/test_transformation_schema.py`: Pytest unit tests for `transformation.py` to validate the schema of input data, ensuring all expected columns are present.</li>
+                                </ul>
+                                <p><strong>Key Features:</strong> PySpark processing, JSON to Parquet conversion, `extract_date` column addition, schema validation, data partitioning by `process_date`.</p>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-amber-500">↓</div>
+
+                        <!-- Step 3: Aggregation -->
+                        <div class="pipeline-step w-full max-w-2xl bg-amber-200 p-4 rounded-lg shadow-md border border-amber-300 cursor-pointer hover:shadow-lg transition-shadow">
+                            <h3 class="text-xl font-bold text-amber-800">3. Data Aggregation (Gold Layer) 📊</h3>
+                            <div class="pipeline-details hidden mt-3 text-sm text-zinc-700 space-y-2">
+                                <p><strong>Purpose:</strong> Aggregates the transformed data from the Silver layer to create analytical views for business intelligence.</p>
+                                <p><strong>Files:</strong></p>
+                                <ul class="list-disc list-inside ml-4">
+                                    <li>`dags/brewery_dag.py`: Defines the `brewery_aggregate` task using `SparkSubmitOperator`.</li>
+                                    <li>`scripts/spark/aggregation.py`: PySpark script that reads Parquet data from the Silver layer, filters it to the latest `process_date`, aggregates brewery counts by `brewery_type` and `country`, and writes the result to the Gold layer. It includes schema validation for required columns.</li>
+                                    <li>`scripts/tests/test_aggregation_schema.py`: Pytest unit tests for `aggregation.py` to validate the schema of input data before aggregation.</li>
+                                </ul>
+                                <p><strong>Key Features:</strong> PySpark aggregation, filtering by latest `process_date`, schema validation, data partitioning by `process_date`.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Insights Tab (Example Chart) -->
+            <section id="insights" class="tab-content">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-amber-200">
+                    <h2 class="text-2xl font-bold text-sky-800 mb-4">Data Insights: Brewery Counts by Type & Country</h2>
+                    <p class="text-zinc-700 leading-relaxed mb-6">
+                        This section provides a sample visualization of the aggregated data available in the Gold layer. The data represents a hypothetical count of breweries by type and country, demonstrating the kind of insights derived from the pipeline.
+                    </p>
+
+                    <div class="chart-container w-full max-w-2xl mx-auto h-96 max-h-[400px] relative">
+                        <canvas id="breweryChart"></canvas>
+                    </div>
+
+                    <div class="mt-8 text-center text-zinc-600 text-sm">
+                        <p>This chart is a representation of data from the Gold layer. Actual data may vary based on API updates and pipeline runs.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Language Switching functionality removed as only English is supported.
+
+        // Tab Navigation
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        function showTab(tabId) {
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            tabLinks.forEach(link => {
+                link.classList.remove('active-tab');
+            });
+
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`a[href="#${tabId}"]`).classList.add('active-tab');
+        }
+
+        tabLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabId = link.getAttribute('href').substring(1);
+                showTab(tabId);
+            });
+        });
+
+        // Show initial tab (e.g., Overview)
+        showTab('overview');
+
+        // Accordion functionality
+        const accordionHeaders = document.querySelectorAll('.accordion-header');
+
+        accordionHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const item = header.closest('.accordion-item');
+                const content = item.querySelector('.accordion-content');
+                const icon = header.querySelector('.accordion-icon');
+
+                // Toggle active class on the item
+                item.classList.toggle('is-open');
+
+                if (item.classList.contains('is-open')) {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    icon.textContent = '▲';
+                } else {
+                    content.style.maxHeight = null;
+                    icon.textContent = '▼';
+                }
+            });
+        });
+
+        // Pipeline Explorer interactivity
+        const pipelineSteps = document.querySelectorAll('.pipeline-step');
+
+        pipelineSteps.forEach(step => {
+            step.addEventListener('click', () => {
+                const details = step.querySelector('.pipeline-details');
+                details.classList.toggle('hidden');
+                step.classList.toggle('bg-amber-50'); /* Toggle background for visual feedback */
+                step.classList.toggle('bg-slate-100');
+                step.classList.toggle('bg-amber-200');
+            });
+        });
+
+        // Chart.js Visualization
+        const breweryChartCtx = document.getElementById('breweryChart').getContext('2d');
+
+        // Sample data for demonstration (replace with actual data if available)
+        const chartData = {
+            labels: ['Micro', 'Brewpub', 'Planning', 'Taproom', 'Regional', 'Large', 'Contract'],
+            datasets: [{
+                label: 'Brewery Count',
+                data: [1200, 850, 300, 700, 250, 100, 50],
+                backgroundColor: [
+                    'rgba(251, 191, 36, 0.8)', /* amber-400 */
+                    'rgba(148, 163, 184, 0.8)', /* slate-400 */
+                    'rgba(2, 132, 199, 0.8)', /* sky-600 */
+                    'rgba(253, 224, 71, 0.8)', /* amber-200 */
+                    'rgba(94, 114, 228, 0.8)', /* indigo-400 */
+                    'rgba(255, 99, 132, 0.8)', /* red */
+                    'rgba(54, 162, 235, 0.8)'  /* blue */
+                ],
+                borderColor: [
+                    'rgba(251, 191, 36, 1)',
+                    'rgba(148, 163, 184, 1)',
+                    'rgba(2, 132, 199, 1)',
+                    'rgba(253, 224, 71, 1)',
+                    'rgba(94, 114, 228, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        const breweryChart = new Chart(breweryChartCtx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // Crucial for respecting container size
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                family: 'Inter'
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Hypothetical Brewery Distribution by Type',
+                        font: {
+                            size: 18,
+                            family: 'Inter'
+                        },
+                        color: '#3f3f46' /* zinc-700 */
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            },
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US').format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        },
+                        titleFont: {
+                            family: 'Inter'
+                        },
+                        bodyFont: {
+                            family: 'Inter'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            font: {
+                                family: 'Inter'
+                            },
+                            callback: function(value, index, values) {
+                                const label = this.getLabelForValue(value);
+                                if (label.length > 16) {
+                                    return label.split(' '); // Basic word wrap
+                                }
+                                return label;
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Brewery Type',
+                            font: {
+                                family: 'Inter'
+                            },
+                            color: '#3f3f46'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            font: {
+                                family: 'Inter'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Count',
+                            font: {
+                                family: 'Inter'
+                            },
+                            color: '#3f3f46'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

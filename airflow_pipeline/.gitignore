@@ -1,0 +1,28 @@
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignore virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VSCode settings
+.vscode/
+
+# Airflow logs & db
+airflow_pipeline/airflow.db
+airflow_pipeline/logs/
+airflow_pipeline/unittest.cfg
+
+# Ignore temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
